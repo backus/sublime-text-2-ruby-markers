@@ -43,13 +43,20 @@ class RubyMarkersCommand(sublime_plugin.TextCommand):
             cmd.append('--quiet')
 
         try:
+            xmpfilter = ' '.join(cmd)
+            source    = 'source /usr/local/opt/chruby/share/chruby/chruby.sh'
+            chruby    = 'chruby 2.4.0'
+            cmd       = '; '.join([source, chruby, xmpfilter])
+
             s = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 cwd=currentdir,
-                startupinfo=startupinfo)
+                startupinfo=startupinfo,
+                shell=True)
+
             out, err = s.communicate(text.encode('utf8'))
             if s.returncode != None and s.returncode != 0:
                 sublime.message_dialog("There was a subprocess error: " + err.decode('utf8'))
@@ -115,6 +122,15 @@ class RubyMarkersCommand(sublime_plugin.TextCommand):
                 rvm_paths = self.settings.get('rvm_paths')
 
                 for path in rvm_paths:
+                    path = os.path.expanduser(path)
+                    if is_executable(path):
+                        self.settings.set('cmd', [path, '-S'])
+                        return
+
+            if path_search == 'auto' or path_search == 'chruby':
+                chruby_paths = self.settings.get('chruby_paths')
+
+                for path in chruby_paths:
                     path = os.path.expanduser(path)
                     if is_executable(path):
                         self.settings.set('cmd', [path, '-S'])
